@@ -19,7 +19,6 @@ Memory::Memory() noexcept
     glowObjectManager = *reinterpret_cast<GlowObjectManager**>(findPattern(L"client", "\x0F\x11\x05????\x83\xC8\x01") + 3);
     disablePostProcessing = *reinterpret_cast<bool**>(findPattern(L"client", "\x83\xEC\x4C\x80\x3D") + 5);
     loadSky = relativeToAbsolute<decltype(loadSky)>(findPattern(L"engine", "\xE8????\x84\xC0\x74\x2D\xA1") + 1);
-    setClanTag = reinterpret_cast<decltype(setClanTag)>(findPattern(L"engine", "\x53\x56\x57\x8B\xDA\x8B\xF9\xFF\x15"));
     lineGoesThroughSmoke = relativeToAbsolute<decltype(lineGoesThroughSmoke)>(findPattern(L"client", "\xE8????\x8B\x4C\x24\x30\x33\xD2") + 1);
     cameraThink = findPattern(L"client", "\x85\xC0\x75\x30\x38\x86");
     acceptMatch = reinterpret_cast<decltype(acceptMatch)>(findPattern(L"client", "\x55\x8B\xEC\x83\xE4\xF8\x8B\x4D\x08\xBA????\xE8????\x85\xC0\x75\x12"));
@@ -37,7 +36,6 @@ Memory::Memory() noexcept
     viewRender = **reinterpret_cast<ViewRender***>(findPattern(L"client", "\x8B\x0D????\xFF\x75\x0C\x8B\x45\x08") + 2);
     drawScreenEffectMaterial = relativeToAbsolute<uintptr_t>(findPattern(L"client", "\xE8????\x83\xC4\x0C\x8D\x4D\xF8") + 1);
     submitReport = reinterpret_cast<decltype(submitReport)>(findPattern(L"client", "\x55\x8B\xEC\x83\xE4\xF8\x83\xEC\x28\x8B\x4D\x08"));
-    fakePrime = reinterpret_cast<std::uint8_t*>(findPattern(L"client", "\x17\xF6\x40\x14\x10") - 1);
     const auto tier0 = GetModuleHandleW(L"tier0");
     debugMsg = reinterpret_cast<decltype(debugMsg)>(GetProcAddress(tier0, "Msg"));
     conColorMsg = reinterpret_cast<decltype(conColorMsg)>(GetProcAddress(tier0, "?ConColorMsg@@YAXABVColor@@PBDZZ"));

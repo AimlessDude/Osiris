@@ -34,92 +34,11 @@
 #define IMGUI_DEFINE_MATH_OPERATORS
 #include "../imgui/imgui_internal.h"
 
-void Misc::edgejump(UserCmd* cmd) noexcept
-{
-    if (!config->misc.edgejump || !GetAsyncKeyState(config->misc.edgejumpkey))
-        return;
-
-    if (!localPlayer || !localPlayer->isAlive())
-        return;
-
-    if (const auto mt = localPlayer->moveType(); mt == MoveType::LADDER || mt == MoveType::NOCLIP)
-        return;
-
-    if ((EnginePrediction::getFlags() & 1) && !(localPlayer->flags() & 1))
-        cmd->buttons |= UserCmd::IN_JUMP;
-}
-
-void Misc::slowwalk(UserCmd* cmd) noexcept
-{
-    if (!config->misc.slowwalk || !GetAsyncKeyState(config->misc.slowwalkKey))
-        return;
-
-    if (!localPlayer || !localPlayer->isAlive())
-        return;
-
-    const auto activeWeapon = localPlayer->getActiveWeapon();
-    if (!activeWeapon)
-        return;
-
-    const auto weaponData = activeWeapon->getWeaponData();
-    if (!weaponData)
-        return;
-
-    const float maxSpeed = (localPlayer->isScoped() ? weaponData->maxSpeedAlt : weaponData->maxSpeed) / 3;
-
-    if (cmd->forwardmove && cmd->sidemove) {
-        const float maxSpeedRoot = maxSpeed * static_cast<float>(M_SQRT1_2);
-        cmd->forwardmove = cmd->forwardmove < 0.0f ? -maxSpeedRoot : maxSpeedRoot;
-        cmd->sidemove = cmd->sidemove < 0.0f ? -maxSpeedRoot : maxSpeedRoot;
-    } else if (cmd->forwardmove) {
-        cmd->forwardmove = cmd->forwardmove < 0.0f ? -maxSpeed : maxSpeed;
-    } else if (cmd->sidemove) {
-        cmd->sidemove = cmd->sidemove < 0.0f ? -maxSpeed : maxSpeed;
-    }
-}
 
 void Misc::inverseRagdollGravity() noexcept
 {
     static auto ragdollGravity = interfaces->cvar->findVar("cl_ragdoll_gravity");
     ragdollGravity->setValue(config->visuals.inverseRagdollGravity ? -600 : 600);
-}
-
-void Misc::updateClanTag(bool tagChanged) noexcept
-{
-    static std::string clanTag;
-
-    if (tagChanged) {
-        clanTag = config->misc.clanTag;
-        if (!clanTag.empty() && clanTag.front() != ' ' && clanTag.back() != ' ')
-            clanTag.push_back(' ');
-        return;
-    }
-    
-    static auto lastTime = 0.0f;
-
-    if (config->misc.clocktag) {
-        if (memory->globalVars->realtime - lastTime < 1.0f)
-            return;
-
-        const auto time = std::time(nullptr);
-        const auto localTime = std::localtime(&time);
-        char s[11];
-        s[0] = '\0';
-        sprintf_s(s, "[%02d:%02d:%02d]", localTime->tm_hour, localTime->tm_min, localTime->tm_sec);
-        lastTime = memory->globalVars->realtime;
-        memory->setClanTag(s, s);
-    } else if (config->misc.customClanTag) {
-        if (memory->globalVars->realtime - lastTime < 0.6f)
-            return;
-
-        if (config->misc.animatedClanTag && !clanTag.empty()) {
-            const auto offset = Helpers::utf8SeqLen(clanTag[0]);
-            if (offset != -1)
-                std::rotate(clanTag.begin(), clanTag.begin() + offset, clanTag.end());
-        }
-        lastTime = memory->globalVars->realtime;
-        memory->setClanTag(clanTag.c_str(), clanTag.c_str());
-    }
 }
 
 void Misc::spectatorList() noexcept
@@ -235,114 +154,6 @@ void Misc::recoilCrosshair(ImDrawList* drawList) noexcept
         drawCrosshair(drawList, pos, Helpers::calculateColor(config->misc.recoilCrosshair), config->misc.recoilCrosshair.thickness);
 }
 
-void Misc::watermark() noexcept
-{
-    if (config->misc.watermark.enabled) {
-        interfaces->surface->setTextFont(Surface::font);
-
-        if (config->misc.watermark.rainbow)
-            interfaces->surface->setTextColor(rainbowColor(config->misc.watermark.rainbowSpeed));
-        else
-            interfaces->surface->setTextColor(config->misc.watermark.color);
-
-        interfaces->surface->setTextPosition(5, 0);
-        interfaces->surface->printText(L"Osiris");
-
-        static auto frameRate = 1.0f;
-        frameRate = 0.9f * frameRate + 0.1f * memory->globalVars->absoluteFrameTime;
-        const auto [screenWidth, screenHeight] = interfaces->surface->getScreenSize();
-        std::wstring fps{ std::to_wstring(static_cast<int>(1 / frameRate)) + L" fps" };
-        const auto [fpsWidth, fpsHeight] = interfaces->surface->getTextSize(Surface::font, fps.c_str());
-        interfaces->surface->setTextPosition(screenWidth - fpsWidth - 5, 0);
-        interfaces->surface->printText(fps.c_str());
-
-        float latency = 0.0f;
-        if (auto networkChannel = interfaces->engine->getNetworkChannel(); networkChannel && networkChannel->getLatency(0) > 0.0f)
-            latency = networkChannel->getLatency(0);
-
-        std::wstring ping{ L"PING: " + std::to_wstring(static_cast<int>(latency * 1000)) + L" ms" };
-        const auto pingWidth = interfaces->surface->getTextSize(Surface::font, ping.c_str()).first;
-        interfaces->surface->setTextPosition(screenWidth - pingWidth - 5, fpsHeight);
-        interfaces->surface->printText(ping.c_str());
-    }
-}
-
-void Misc::prepareRevolver(UserCmd* cmd) noexcept
-{
-    constexpr auto timeToTicks = [](float time) {  return static_cast<int>(0.5f + time / memory->globalVars->intervalPerTick); };
-    constexpr float revolverPrepareTime{ 0.234375f };
-
-    static float readyTime;
-    if (config->misc.prepareRevolver && localPlayer && (!config->misc.prepareRevolverKey || GetAsyncKeyState(config->misc.prepareRevolverKey))) {
-        const auto activeWeapon = localPlayer->getActiveWeapon();
-        if (activeWeapon && activeWeapon->itemDefinitionIndex2() == WeaponId::Revolver) {
-            if (!readyTime) readyTime = memory->globalVars->serverTime() + revolverPrepareTime;
-            auto ticksToReady = timeToTicks(readyTime - memory->globalVars->serverTime() - interfaces->engine->getNetworkChannel()->getLatency(0));
-            if (ticksToReady > 0 && ticksToReady <= timeToTicks(revolverPrepareTime))
-                cmd->buttons |= UserCmd::IN_ATTACK;
-            else
-                readyTime = 0.0f;
-        }
-    }
-}
-
-void Misc::fastPlant(UserCmd* cmd) noexcept
-{
-    if (!config->misc.fastPlant)
-        return;
-
-    static auto plantAnywhere = interfaces->cvar->findVar("mp_plant_c4_anywhere");
-
-    if (plantAnywhere->getInt())
-        return;
-
-    if (!localPlayer || !localPlayer->isAlive() || (localPlayer->inBombZone() && localPlayer->flags() & 1))
-        return;
-
-    const auto activeWeapon = localPlayer->getActiveWeapon();
-    if (!activeWeapon || activeWeapon->getClientClass()->classId != ClassId::C4)
-        return;
-
-    cmd->buttons &= ~UserCmd::IN_ATTACK;
-
-    constexpr auto doorRange = 200.0f;
-
-    Trace trace;
-    const auto startPos = localPlayer->getEyePosition();
-    const auto endPos = startPos + Vector::fromAngle(cmd->viewangles) * doorRange;
-    interfaces->engineTrace->traceRay({ startPos, endPos }, 0x46004009, localPlayer.get(), trace);
-
-    if (!trace.entity || trace.entity->getClientClass()->classId != ClassId::PropDoorRotating)
-        cmd->buttons &= ~UserCmd::IN_USE;
-}
-
-void Misc::fastStop(UserCmd* cmd) noexcept
-{
-    if (!config->misc.fastStop)
-        return;
-
-    if (!localPlayer || !localPlayer->isAlive())
-        return;
-
-    if (localPlayer->moveType() == MoveType::NOCLIP || localPlayer->moveType() == MoveType::LADDER || !(localPlayer->flags() & 1) || cmd->buttons & UserCmd::IN_JUMP)
-        return;
-
-    if (cmd->buttons & (UserCmd::IN_MOVELEFT | UserCmd::IN_MOVERIGHT | UserCmd::IN_FORWARD | UserCmd::IN_BACK))
-        return;
-    
-    const auto velocity = localPlayer->velocity();
-    const auto speed = velocity.length2D();
-    if (speed < 15.0f)
-        return;
-    
-    Vector direction = velocity.toAngle();
-    direction.y = cmd->viewangles.y - direction.y;
-
-    const auto negatedDirection = Vector::fromAngle(direction) * -speed;
-    cmd->forwardmove = negatedDirection.x;
-    cmd->sidemove = negatedDirection.y;
-}
-
 void Misc::drawBombTimer() noexcept
 {
     if (config->misc.bombTimer.enabled) {
@@ -397,7 +208,8 @@ void Misc::drawBombTimer() noexcept
                         if (entity->c4BlowTime() >= entity->c4DefuseCountDown()) {
                             canDefuseText = L"Can Defuse";
                             interfaces->surface->setTextColor(0, 255, 0);
-                        } else {
+                        }
+                        else {
                             canDefuseText = L"Cannot Defuse";
                             interfaces->surface->setTextColor(255, 0, 0);
                         }
@@ -410,37 +222,6 @@ void Misc::drawBombTimer() noexcept
             break;
         }
     }
-}
-
-void Misc::stealNames() noexcept
-{
-    if (!config->misc.nameStealer)
-        return;
-
-    if (!localPlayer)
-        return;
-
-    static std::vector<int> stolenIds;
-
-    for (int i = 1; i <= memory->globalVars->maxClients; ++i) {
-        const auto entity = interfaces->entityList->getEntity(i);
-
-        if (!entity || entity == localPlayer.get())
-            continue;
-
-        PlayerInfo playerInfo;
-        if (!interfaces->engine->getPlayerInfo(entity->index(), playerInfo))
-            continue;
-
-        if (playerInfo.fakeplayer || std::find(stolenIds.cbegin(), stolenIds.cend(), playerInfo.userId) != stolenIds.cend())
-            continue;
-
-        if (changeName(false, (std::string{ playerInfo.name } +'\x1').c_str(), 1.0f))
-            stolenIds.push_back(playerInfo.userId);
-
-        return;
-    }
-    stolenIds.clear();
 }
 
 void Misc::disablePanoramablur() noexcept
@@ -485,36 +266,6 @@ void Misc::quickReload(UserCmd* cmd) noexcept
     }
 }
 
-bool Misc::changeName(bool reconnect, const char* newName, float delay) noexcept
-{
-    static auto exploitInitialized{ false };
-
-    static auto name{ interfaces->cvar->findVar("name") };
-
-    if (reconnect) {
-        exploitInitialized = false;
-        return false;
-    }
-
-    if (!exploitInitialized && interfaces->engine->isInGame()) {
-        if (PlayerInfo playerInfo; localPlayer && interfaces->engine->getPlayerInfo(localPlayer->index(), playerInfo) && (!strcmp(playerInfo.name, "?empty") || !strcmp(playerInfo.name, "\n\xAD\xAD\xAD"))) {
-            exploitInitialized = true;
-        } else {
-            name->onChangeCallbacks.size = 0;
-            name->setValue("\n\xAD\xAD\xAD");
-            return false;
-        }
-    }
-
-    static auto nextChangeTime{ 0.0f };
-    if (nextChangeTime <= memory->globalVars->realtime) {
-        name->setValue(newName);
-        nextChangeTime = memory->globalVars->realtime + delay;
-        return true;
-    }
-    return false;
-}
-
 void Misc::bunnyHop(UserCmd* cmd) noexcept
 {
     if (!localPlayer)
@@ -528,92 +279,12 @@ void Misc::bunnyHop(UserCmd* cmd) noexcept
     wasLastTimeOnGround = localPlayer->flags() & 1;
 }
 
-void Misc::fakeBan(bool set) noexcept
-{
-    static bool shouldSet = false;
-
-    if (set)
-        shouldSet = set;
-
-    if (shouldSet && interfaces->engine->isInGame() && changeName(false, std::string{ "\x1\xB" }.append(std::string{ static_cast<char>(config->misc.banColor + 1) }).append(config->misc.banText).append("\x1").c_str(), 5.0f))
-        shouldSet = false;
-}
-
 void Misc::nadePredict() noexcept
 {
     static auto nadeVar{ interfaces->cvar->findVar("cl_grenadepreview") };
 
     nadeVar->onChangeCallbacks.size = 0;
     nadeVar->setValue(config->misc.nadePredict);
-}
-
-void Misc::quickHealthshot(UserCmd* cmd) noexcept
-{
-    if (!localPlayer)
-        return;
-
-    static bool inProgress{ false };
-
-    if (GetAsyncKeyState(config->misc.quickHealthshotKey) & 1)
-        inProgress = true;
-
-    if (auto activeWeapon{ localPlayer->getActiveWeapon() }; activeWeapon && inProgress) {
-        if (activeWeapon->getClientClass()->classId == ClassId::Healthshot && localPlayer->nextAttack() <= memory->globalVars->serverTime() && activeWeapon->nextPrimaryAttack() <= memory->globalVars->serverTime())
-            cmd->buttons |= UserCmd::IN_ATTACK;
-        else {
-            for (auto weaponHandle : localPlayer->weapons()) {
-                if (weaponHandle == -1)
-                    break;
-
-                if (const auto weapon{ interfaces->entityList->getEntityFromHandle(weaponHandle) }; weapon && weapon->getClientClass()->classId == ClassId::Healthshot) {
-                    cmd->weaponselect = weapon->index();
-                    cmd->weaponsubtype = weapon->getWeaponSubType();
-                    return;
-                }
-            }
-        }
-        inProgress = false;
-    }
-}
-
-void Misc::fixTabletSignal() noexcept
-{
-    if (config->misc.fixTabletSignal && localPlayer) {
-        if (auto activeWeapon{ localPlayer->getActiveWeapon() }; activeWeapon && activeWeapon->getClientClass()->classId == ClassId::Tablet)
-            activeWeapon->tabletReceptionIsBlocked() = false;
-    }
-}
-
-void Misc::fakePrime() noexcept
-{
-    static bool lastState = false;
-
-    if (config->misc.fakePrime != lastState) {
-        lastState = config->misc.fakePrime;
-
-        if (DWORD oldProtect; VirtualProtect(memory->fakePrime, 1, PAGE_EXECUTE_READWRITE, &oldProtect)) {
-            constexpr uint8_t patch[]{ 0x74, 0xEB };
-            *memory->fakePrime = patch[config->misc.fakePrime];
-            VirtualProtect(memory->fakePrime, 1, oldProtect, nullptr);
-        }
-    }
-}
-
-void Misc::killMessage(GameEvent& event) noexcept
-{
-    if (!config->misc.killMessage)
-        return;
-
-    if (!localPlayer || !localPlayer->isAlive())
-        return;
-
-    if (const auto localUserId = localPlayer->getUserId(); event.getInt("attacker") != localUserId || event.getInt("userid") == localUserId)
-        return;
-
-    std::string cmd = "say \"";
-    cmd += config->misc.killMessageString;
-    cmd += '"';
-    interfaces->engine->clientCmdUnrestricted(cmd.c_str());
 }
 
 void Misc::fixMovement(UserCmd* cmd, float yaw) noexcept
@@ -652,19 +323,6 @@ void Misc::fixAnimationLOD(FrameStage stage) noexcept
     }
 }
 
-void Misc::autoPistol(UserCmd* cmd) noexcept
-{
-    if (config->misc.autoPistol && localPlayer) {
-        const auto activeWeapon = localPlayer->getActiveWeapon();
-        if (activeWeapon && activeWeapon->isPistol() && activeWeapon->nextPrimaryAttack() > memory->globalVars->serverTime()) {
-            if (activeWeapon->itemDefinitionIndex2() == WeaponId::Revolver)
-                cmd->buttons &= ~UserCmd::IN_ATTACK2;
-            else
-                cmd->buttons &= ~UserCmd::IN_ATTACK;
-        }
-    }
-}
-
 void Misc::chokePackets(bool& sendPacket) noexcept
 {
     if (!config->misc.chokedPacketsKey || GetAsyncKeyState(config->misc.chokedPacketsKey))
@@ -684,168 +342,6 @@ void Misc::revealRanks(UserCmd* cmd) noexcept
 {
     if (config->misc.revealRanks && cmd->buttons & UserCmd::IN_SCORE)
         interfaces->client->dispatchUserMessage(50, 0, 0, nullptr);
-}
-
-void Misc::autoStrafe(UserCmd* cmd) noexcept
-{
-    if (localPlayer
-        && config->misc.autoStrafe
-        && !(localPlayer->flags() & 1)
-        && localPlayer->moveType() != MoveType::NOCLIP) {
-        if (cmd->mousedx < 0)
-            cmd->sidemove = -450.0f;
-        else if (cmd->mousedx > 0)
-            cmd->sidemove = 450.0f;
-    }
-}
-
-void Misc::removeCrouchCooldown(UserCmd* cmd) noexcept
-{
-    if (config->misc.fastDuck)
-        cmd->buttons |= UserCmd::IN_BULLRUSH;
-}
-
-void Misc::moonwalk(UserCmd* cmd) noexcept
-{
-    if (config->misc.moonwalk && localPlayer && localPlayer->moveType() != MoveType::LADDER)
-        cmd->buttons ^= UserCmd::IN_FORWARD | UserCmd::IN_BACK | UserCmd::IN_MOVELEFT | UserCmd::IN_MOVERIGHT;
-}
-
-void Misc::playHitSound(GameEvent& event) noexcept
-{
-    if (!config->misc.hitSound)
-        return;
-
-    if (!localPlayer)
-        return;
-
-    if (const auto localUserId = localPlayer->getUserId(); event.getInt("attacker") != localUserId || event.getInt("userid") == localUserId)
-        return;
-
-    constexpr std::array hitSounds{
-        "play physics/metal/metal_solid_impact_bullet2",
-        "play buttons/arena_switch_press_02",
-        "play training/timer_bell",
-        "play physics/glass/glass_impact_bullet1"
-    };
-
-    if (static_cast<std::size_t>(config->misc.hitSound - 1) < hitSounds.size())
-        interfaces->engine->clientCmdUnrestricted(hitSounds[config->misc.hitSound - 1]);
-    else if (config->misc.hitSound == 5)
-        interfaces->engine->clientCmdUnrestricted(("play " + config->misc.customHitSound).c_str());
-}
-
-void Misc::killSound(GameEvent& event) noexcept
-{
-    if (!config->misc.killSound)
-        return;
-
-    if (!localPlayer || !localPlayer->isAlive())
-        return;
-
-    if (const auto localUserId = localPlayer->getUserId(); event.getInt("attacker") != localUserId || event.getInt("userid") == localUserId)
-        return;
-
-    constexpr std::array killSounds{
-        "play physics/metal/metal_solid_impact_bullet2",
-        "play buttons/arena_switch_press_02",
-        "play training/timer_bell",
-        "play physics/glass/glass_impact_bullet1"
-    };
-
-    if (static_cast<std::size_t>(config->misc.killSound - 1) < killSounds.size())
-        interfaces->engine->clientCmdUnrestricted(killSounds[config->misc.killSound - 1]);
-    else if (config->misc.killSound == 5)
-        interfaces->engine->clientCmdUnrestricted(("play " + config->misc.customKillSound).c_str());
-}
-
-void Misc::purchaseList(GameEvent* event) noexcept
-{
-    static std::mutex mtx;
-    std::scoped_lock _{ mtx };
-
-    static std::unordered_map<std::string, std::pair<std::vector<std::string>, int>> purchaseDetails;
-    static std::unordered_map<std::string, int> purchaseTotal;
-    static int totalCost;
-
-    static auto freezeEnd = 0.0f;
-
-    if (event) {
-        switch (fnv::hashRuntime(event->getName())) {
-        case fnv::hash("item_purchase"): {
-            const auto player = interfaces->entityList->getEntity(interfaces->engine->getPlayerForUserID(event->getInt("userid")));
-
-            if (player && localPlayer && memory->isOtherEnemy(player, localPlayer.get())) {
-                if (const auto definition = memory->itemSystem()->getItemSchema()->getItemDefinitionByName(event->getString("weapon"))) {
-                    auto& purchase = purchaseDetails[player->getPlayerName()];
-                    if (const auto weaponInfo = memory->weaponSystem->getWeaponInfo(definition->getWeaponId())) {
-                        purchase.second += weaponInfo->price;
-                        totalCost += weaponInfo->price;
-                    }
-                    const std::string weapon = interfaces->localize->findAsUTF8(definition->getItemBaseName());
-                    ++purchaseTotal[weapon];
-                    purchase.first.push_back(weapon);
-                }
-            }
-            break;
-        }
-        case fnv::hash("round_start"):
-            freezeEnd = 0.0f;
-            purchaseDetails.clear();
-            purchaseTotal.clear();
-            totalCost = 0;
-            break;
-        case fnv::hash("round_freeze_end"):
-            freezeEnd = memory->globalVars->realtime;
-            break;
-        }
-    } else {
-        if (!config->misc.purchaseList.enabled)
-            return;
-
-        static const auto mp_buytime = interfaces->cvar->findVar("mp_buytime");
-
-        if ((!interfaces->engine->isInGame() || freezeEnd != 0.0f && memory->globalVars->realtime > freezeEnd + (!config->misc.purchaseList.onlyDuringFreezeTime ? mp_buytime->getFloat() : 0.0f) || purchaseDetails.empty() || purchaseTotal.empty()) && !gui->open)
-            return;
-
-        ImGui::SetNextWindowSize({ 200.0f, 200.0f }, ImGuiCond_Once);
-
-        ImGuiWindowFlags windowFlags = ImGuiWindowFlags_NoCollapse;
-        if (!gui->open)
-            windowFlags |= ImGuiWindowFlags_NoInputs;
-        if (config->misc.purchaseList.noTitleBar)
-            windowFlags |= ImGuiWindowFlags_NoTitleBar;
-
-        ImGui::PushStyleVar(ImGuiStyleVar_WindowTitleAlign, { 0.5f, 0.5f });
-        ImGui::Begin("Purchases", nullptr, windowFlags);
-        ImGui::PopStyleVar();
-
-        if (config->misc.purchaseList.mode == PurchaseList::Details) {
-            for (const auto& [playerName, purchases] : purchaseDetails) {
-                std::string s;
-                s.reserve(std::accumulate(purchases.first.begin(), purchases.first.end(), 0, [](int length, const auto& s) { return length + s.length() + 2; }));
-                for (const auto& purchasedItem : purchases.first)
-                    s += purchasedItem + ", ";
-
-                if (s.length() >= 2)
-                    s.erase(s.length() - 2);
-
-                if (config->misc.purchaseList.showPrices)
-                    ImGui::TextWrapped("%s $%d: %s", playerName.c_str(), purchases.second, s.c_str());
-                else
-                    ImGui::TextWrapped("%s: %s", playerName.c_str(), s.c_str());
-            }
-        } else if (config->misc.purchaseList.mode == PurchaseList::Summary) {
-            for (const auto& purchase : purchaseTotal)
-                ImGui::TextWrapped("%d x %s", purchase.second, purchase.first.c_str());
-
-            if (config->misc.purchaseList.showPrices && totalCost > 0) {
-                ImGui::Separator();
-                ImGui::TextWrapped("Total: $%d", totalCost);
-            }
-        }
-        ImGui::End();
-    }
 }
 
 void Misc::oppositeHandKnife(FrameStage stage) noexcept

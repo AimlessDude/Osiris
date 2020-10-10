@@ -53,7 +53,6 @@ Config::Config(const char* name) noexcept
 #endif
 
     listConfigs();
-    misc.clanTag[0] = '\0';
 
 #ifdef _WIN32
     LOGFONTW logfont;
@@ -332,14 +331,6 @@ static void from_json(const json& j, Config::Backtrack& b)
     read(j, "Time limit", b.timeLimit);
 }
 
-static void from_json(const json& j, Config::AntiAim& a)
-{
-    read(j, "Enabled", a.enabled);
-    read(j, "Pitch", a.pitch);
-    read(j, "Yaw", a.yaw);
-    read(j, "Pitch angle", a.pitchAngle);
-}
-
 static void from_json(const json& j, Config::Glow& g)
 {
     from_json(j, static_cast<ColorA&>(g));
@@ -500,15 +491,6 @@ static void from_json(const json& j, Config::Style& s)
     }
 }
 
-static void from_json(const json& j, PurchaseList& pl)
-{
-    read(j, "Enabled", pl.enabled);
-    read(j, "Only During Freeze Time", pl.onlyDuringFreezeTime);
-    read(j, "Show Prices", pl.showPrices);
-    read(j, "No Title Bar", pl.noTitleBar);
-    read(j, "Mode", pl.mode);
-}
-
 static void from_json(const json& j, PreserveKillfeed& o)
 {
     read(j, "Enabled", o.enabled);
@@ -519,60 +501,27 @@ static void from_json(const json& j, Config::Misc& m)
 {
     read(j, "Menu key", m.menuKey);
     read(j, "Anti AFK kick", m.antiAfkKick);
-    read(j, "Auto strafe", m.autoStrafe);
     read(j, "Bunny hop", m.bunnyHop);
-    read(j, "Custom clan tag", m.customClanTag);
-    read(j, "Clock tag", m.clocktag);
-    if (j.contains("Clan tag"))
-        strncpy_s(m.clanTag, j["Clan tag"].get<std::string>().c_str(), _TRUNCATE);
-    read(j, "Animated clan tag", m.animatedClanTag);
-    read(j, "Fast duck", m.fastDuck);
-    read(j, "Moonwalk", m.moonwalk);
-    read(j, "Edge Jump", m.edgejump);
-    read(j, "Edge Jump Key", m.edgejumpkey);
-    read(j, "Slowwalk", m.slowwalk);
-    read(j, "Slowwalk key", m.slowwalkKey);
     read<value_t::object>(j, "Noscope crosshair", m.noscopeCrosshair);
     read<value_t::object>(j, "Recoil crosshair", m.recoilCrosshair);
-    read(j, "Auto pistol", m.autoPistol);
     read(j, "Auto reload", m.autoReload);
     read(j, "Auto accept", m.autoAccept);
     read(j, "Radar hack", m.radarHack);
     read(j, "Reveal ranks", m.revealRanks);
     read(j, "Reveal money", m.revealMoney);
     read(j, "Reveal suspect", m.revealSuspect);
-    read<value_t::object>(j, "Spectator list", m.spectatorList);
-    read<value_t::object>(j, "Watermark", m.watermark);
     read(j, "Fix animation LOD", m.fixAnimationLOD);
     read(j, "Fix bone matrix", m.fixBoneMatrix);
     read(j, "Fix movement", m.fixMovement);
     read(j, "Disable model occlusion", m.disableModelOcclusion);
     read(j, "Aspect Ratio", m.aspectratio);
-    read(j, "Kill message", m.killMessage);
-    read<value_t::object>(j, "Kill message string", m.killMessageString);
-    read(j, "Name stealer", m.nameStealer);
     read(j, "Disable HUD blur", m.disablePanoramablur);
-    read(j, "Ban color", m.banColor);
-    read<value_t::object>(j, "Ban text", m.banText);
-    read(j, "Fast plant", m.fastPlant);
-    read(j, "Fast Stop", m.fastStop);
     read<value_t::object>(j, "Bomb timer", m.bombTimer);
     read(j, "Quick reload", m.quickReload);
-    read(j, "Prepare revolver", m.prepareRevolver);
-    read(j, "Prepare revolver key", m.prepareRevolverKey);
-    read(j, "Hit sound", m.hitSound);
     read(j, "Choked packets", m.chokedPackets);
     read(j, "Choked packets key", m.chokedPacketsKey);
-    read(j, "Quick healthshot key", m.quickHealthshotKey);
     read(j, "Grenade predict", m.nadePredict);
-    read(j, "Fix tablet signal", m.fixTabletSignal);
     read(j, "Max angle delta", m.maxAngleDelta);
-    read(j, "Fake prime", m.fakePrime);
-    read(j, "Fix tablet signal", m.fixTabletSignal);
-    read<value_t::object>(j, "Custom Hit Sound", m.customHitSound);
-    read(j, "Kill sound", m.killSound);
-    read<value_t::object>(j, "Custom Kill Sound", m.customKillSound);
-    read<value_t::object>(j, "Purchase List", m.purchaseList);
     read<value_t::object>(j, "Reportbot", m.reportbot);
     read(j, "Opposite Hand Knife", m.oppositeHandKnife);
     read<value_t::object>(j, "Preserve Killfeed", m.preserveKillfeed);
@@ -606,7 +555,6 @@ void Config::load(size_t id, bool incremental) noexcept
     read(j, "Aimbot", aimbot);
     read(j, "Triggerbot", triggerbot);
     read<value_t::object>(j, "Backtrack", backtrack);
-    read<value_t::object>(j, "Anti aim", antiAim);
     read(j, "Glow", glow);
     read(j, "Chams", chams);
     read<value_t::object>(j, "ESP", streamProofESP);
@@ -798,14 +746,6 @@ static void to_json(json& j, const Config::Backtrack& o, const Config::Backtrack
     WRITE("Time limit", timeLimit);
 }
 
-static void to_json(json& j, const Config::AntiAim& o, const Config::AntiAim& dummy = {})
-{
-    WRITE("Enabled", enabled);
-    WRITE("Pitch", pitch);
-    WRITE("Pitch angle", pitchAngle);
-    WRITE("Yaw", yaw);
-}
-
 static void to_json(json& j, const Config::Glow& o, const Config::Glow& dummy = {})
 {
     to_json(j, static_cast<const ColorA&>(o), dummy);
@@ -895,24 +835,9 @@ static void to_json(json& j, const Config::Misc& o)
 
     WRITE("Menu key", menuKey);
     WRITE("Anti AFK kick", antiAfkKick);
-    WRITE("Auto strafe", autoStrafe);
     WRITE("Bunny hop", bunnyHop);
-    WRITE("Custom clan tag", customClanTag);
-    WRITE("Clock tag", clocktag);
-
-    if (o.clanTag[0])
-        j["Clan tag"] = o.clanTag;
-
-    WRITE("Animated clan tag", animatedClanTag);
-    WRITE("Fast duck", fastDuck);
-    WRITE("Moonwalk", moonwalk);
-    WRITE("Edge Jump", edgejump);
-    WRITE("Edge Jump Key", edgejumpkey);
-    WRITE("Slowwalk", slowwalk);
-    WRITE("Slowwalk key", slowwalkKey);
     WRITE("Noscope crosshair", noscopeCrosshair);
     WRITE("Recoil crosshair", recoilCrosshair);
-    WRITE("Auto pistol", autoPistol);
     WRITE("Auto reload", autoReload);
     WRITE("Auto accept", autoAccept);
     WRITE("Radar hack", radarHack);
@@ -920,37 +845,18 @@ static void to_json(json& j, const Config::Misc& o)
     WRITE("Reveal money", revealMoney);
     WRITE("Reveal suspect", revealSuspect);
     WRITE("Spectator list", spectatorList);
-    WRITE("Watermark", watermark);
     WRITE("Fix animation LOD", fixAnimationLOD);
     WRITE("Fix bone matrix", fixBoneMatrix);
     WRITE("Fix movement", fixMovement);
     WRITE("Disable model occlusion", disableModelOcclusion);
     WRITE("Aspect Ratio", aspectratio);
-    WRITE("Kill message", killMessage);
-    WRITE("Kill message string", killMessageString);
-    WRITE("Name stealer", nameStealer);
     WRITE("Disable HUD blur", disablePanoramablur);
-    WRITE("Ban color", banColor);
-    WRITE("Ban text", banText);
-    WRITE("Fast plant", fastPlant);
-    WRITE("Fast Stop", fastStop);
     WRITE("Bomb timer", bombTimer);
     WRITE("Quick reload", quickReload);
-    WRITE("Prepare revolver", prepareRevolver);
-    WRITE("Prepare revolver key", prepareRevolverKey);
-    WRITE("Hit sound", hitSound);
     WRITE("Choked packets", chokedPackets);
     WRITE("Choked packets key", chokedPacketsKey);
-    WRITE("Quick healthshot key", quickHealthshotKey);
     WRITE("Grenade predict", nadePredict);
-    WRITE("Fix tablet signal", fixTabletSignal);
     WRITE("Max angle delta", maxAngleDelta);
-    WRITE("Fake prime", fakePrime);
-    WRITE("Fix tablet signal", fixTabletSignal);
-    WRITE("Custom Hit Sound", customHitSound);
-    WRITE("Kill sound", killSound);
-    WRITE("Custom Kill Sound", customKillSound);
-    WRITE("Purchase List", purchaseList);
     WRITE("Reportbot", reportbot);
     WRITE("Opposite Hand Knife", oppositeHandKnife);
     WRITE("Preserve Killfeed", preserveKillfeed);
@@ -1089,7 +995,6 @@ void Config::save(size_t id) const noexcept
         j["Aimbot"] = aimbot;
         j["Triggerbot"] = triggerbot;
         j["Backtrack"] = backtrack;
-        j["Anti aim"] = antiAim;
         j["Glow"] = glow;
         j["Chams"] = chams;
         j["ESP"] = streamProofESP;

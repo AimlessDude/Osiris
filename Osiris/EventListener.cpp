@@ -40,20 +40,13 @@ void EventListener::fireGameEvent(GameEvent* event)
         GameData::clearProjectileList();
         Misc::preserveKillfeed(true);
         [[fallthrough]];
-    case fnv::hash("item_purchase"):
     case fnv::hash("round_freeze_end"):
-        Misc::purchaseList(event);
         break;
     case fnv::hash("player_death"):
         SkinChanger::updateStatTrak(*event);
         SkinChanger::overrideHudIcon(*event);
-        Misc::killMessage(*event);
-        Misc::killSound(*event);
         break;
     case fnv::hash("player_hurt"):
-        Misc::playHitSound(*event);
-        Visuals::hitEffect(event);
-        Visuals::hitMarker(event);
         break;
     }
 }

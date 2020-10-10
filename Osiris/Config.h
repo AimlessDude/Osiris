@@ -83,13 +83,6 @@ public:
         int timeLimit{ 200 };
     } backtrack;
 
-    struct AntiAim {
-        bool enabled{ false };
-        bool pitch{ false };
-        bool yaw{ false };
-        float pitchAngle{ 0.0f };
-    } antiAim;
-
     struct Glow : ColorA {
         bool enabled{ false };
         bool healthBased{ false };
@@ -200,16 +193,7 @@ public:
     struct Misc {
         int menuKey{ 0x2D }; // VK_INSERT
         bool antiAfkKick{ false };
-        bool autoStrafe{ false };
         bool bunnyHop{ false };
-        bool customClanTag{ false };
-        bool clocktag{ false };
-        bool animatedClanTag{ false };
-        bool fastDuck{ false };
-        bool moonwalk{ false };
-        bool edgejump{ false };
-        bool slowwalk{ false };
-        bool autoPistol{ false };
         bool autoReload{ false };
         bool autoAccept{ false };
         bool radarHack{ false };
@@ -220,40 +204,19 @@ public:
         bool fixBoneMatrix{ false };
         bool fixMovement{ false };
         bool disableModelOcclusion{ false };
-        bool nameStealer{ false };
         bool disablePanoramablur{ false };
-        bool killMessage{ false };
         bool nadePredict{ false };
-        bool fixTabletSignal{ false };
-        bool fakePrime{ false };
-        bool fastPlant{ false };
-        bool fastStop{ false };
         bool quickReload{ false };
-        bool prepareRevolver{ false };
         bool oppositeHandKnife = false;
         PreserveKillfeed preserveKillfeed;
-        char clanTag[16];
-        int edgejumpkey{ 0 };
-        int slowwalkKey{ 0 };
         ColorToggleThickness noscopeCrosshair;
         ColorToggleThickness recoilCrosshair;
         ColorToggle spectatorList;
-        ColorToggle watermark;
         float aspectratio{ 0 };
-        std::string killMessageString{ "Gotcha!" };
-        int banColor{ 6 };
-        std::string banText{ "Cheater has been permanently banned from official CS:GO servers." };
         ColorToggle bombTimer{ 1.0f, 0.55f, 0.0f };
-        int prepareRevolverKey{ 0 };
-        int hitSound{ 0 };
         int chokedPackets{ 0 };
         int chokedPacketsKey{ 0 };
-        int quickHealthshotKey{ 0 };
         float maxAngleDelta{ 255.0f };
-        int killSound{ 0 };
-        std::string customKillSound;
-        std::string customHitSound;
-        PurchaseList purchaseList;
 
         struct Reportbot {
             bool enabled = false;

@@ -19,7 +19,6 @@
 #include "Memory.h"
 
 #include "Hacks/Aimbot.h"
-#include "Hacks/AntiAim.h"
 #include "Hacks/Backtrack.h"
 #include "Hacks/Chams.h"
 #include "Hacks/EnginePrediction.h"
@@ -96,7 +95,6 @@ static HRESULT __stdcall present(IDirect3DDevice9* device, const RECT* src, cons
     ImGui::NewFrame();
 
     StreamProofESP::render();
-    Misc::purchaseList();
     Misc::noscopeCrosshair(ImGui::GetBackgroundDrawList());
     Misc::recoilCrosshair(ImGui::GetBackgroundDrawList());
 
@@ -137,37 +135,18 @@ static bool __stdcall createMove(float inputSampleTime, UserCmd* cmd) noexcept
     memory->globalVars->serverTime(cmd);
     Misc::nadePredict();
     Misc::antiAfkKick(cmd);
-    Misc::fastStop(cmd);
-    Misc::prepareRevolver(cmd);
     Visuals::removeShadows();
     Misc::runReportbot();
     Misc::bunnyHop(cmd);
-    Misc::autoStrafe(cmd);
-    Misc::removeCrouchCooldown(cmd);
-    Misc::autoPistol(cmd);
     Misc::autoReload(cmd);
-    Misc::updateClanTag();
-    Misc::fakeBan();
-    Misc::stealNames();
     Misc::revealRanks(cmd);
     Misc::quickReload(cmd);
-    Misc::quickHealthshot(cmd);
-    Misc::fixTabletSignal();
-    Misc::slowwalk(cmd);
 
     EnginePrediction::run(cmd);
 
     Aimbot::run(cmd);
     Triggerbot::run(cmd);
     Backtrack::run(cmd);
-    Misc::edgejump(cmd);
-    Misc::moonwalk(cmd);
-    Misc::fastPlant(cmd);
-
-    if (!(cmd->buttons & (UserCmd::IN_ATTACK | UserCmd::IN_ATTACK2))) {
-        Misc::chokePackets(sendPacket);
-        AntiAim::run(cmd, previousViewAngles, currentViewAngles, sendPacket);
-    }
 
     auto viewAnglesDelta{ cmd->viewangles - previousViewAngles };
     viewAnglesDelta.normalize();
@@ -241,8 +220,6 @@ static void __stdcall paintTraverse(unsigned int panel, bool forceRepaint, bool 
     if (interfaces->panel->getName(panel) == "MatSystemTopPanel") {
         Misc::drawBombTimer();
         Misc::spectatorList();
-        Misc::watermark();
-        Visuals::hitMarker();
     }
     hooks->panel.callOriginal<void, 41>(panel, forceRepaint, allowForce);
 }
@@ -252,7 +229,6 @@ static void __stdcall frameStageNotify(FrameStage stage) noexcept
     [[maybe_unused]] static auto backtrackInit = (Backtrack::init(), false);
 
     if (interfaces->engine->isConnected() && !interfaces->engine->isInGame())
-        Misc::changeName(true, nullptr, 0.0f);
 
     if (stage == FrameStage::START)
         GameData::update();
@@ -261,7 +237,6 @@ static void __stdcall frameStageNotify(FrameStage stage) noexcept
         Misc::preserveKillfeed();
         Misc::disablePanoramablur();
         Visuals::colorWorld();
-        Misc::fakePrime();
     }
     if (interfaces->engine->isInGame()) {
         Visuals::skybox(stage);
