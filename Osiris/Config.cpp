@@ -502,6 +502,9 @@ static void from_json(const json& j, Config::Misc& m)
     read(j, "Menu key", m.menuKey);
     read(j, "Anti AFK kick", m.antiAfkKick);
     read(j, "Bunny hop", m.bunnyHop);
+    read(j, "Bhop hitchance", m.bhopHitchance);
+    read(j, "Min hits", m.bhopMinHits);
+    read(j, "Max hits", m.bhopMaxHits);
     read<value_t::object>(j, "Noscope crosshair", m.noscopeCrosshair);
     read<value_t::object>(j, "Recoil crosshair", m.recoilCrosshair);
     read(j, "Auto reload", m.autoReload);
@@ -523,6 +526,7 @@ static void from_json(const json& j, Config::Misc& m)
     read(j, "Grenade predict", m.nadePredict);
     read(j, "Max angle delta", m.maxAngleDelta);
     read<value_t::object>(j, "Reportbot", m.reportbot);
+    read(j, "Draw Aimbot FOV", m.drawAimbotFov);
     read(j, "Opposite Hand Knife", m.oppositeHandKnife);
     read<value_t::object>(j, "Preserve Killfeed", m.preserveKillfeed);
 }
@@ -814,15 +818,6 @@ static void to_json(json& j, const Config::Sound& o)
     j["Players"] = o.players;
 }
 
-static void to_json(json& j, const PurchaseList& o, const PurchaseList& dummy = {})
-{
-    WRITE("Enabled", enabled);
-    WRITE("Only During Freeze Time", onlyDuringFreezeTime);
-    WRITE("Show Prices", showPrices);
-    WRITE("No Title Bar", noTitleBar);
-    WRITE("Mode", mode);
-}
-
 static void to_json(json& j, const PreserveKillfeed& o, const PreserveKillfeed& dummy = {})
 {
     WRITE("Enabled", enabled);
@@ -836,6 +831,9 @@ static void to_json(json& j, const Config::Misc& o)
     WRITE("Menu key", menuKey);
     WRITE("Anti AFK kick", antiAfkKick);
     WRITE("Bunny hop", bunnyHop);
+    WRITE("Bhop hitchance", bhopHitchance);
+    WRITE("Max hits", bhopMaxHits);
+    WRITE("Min hits", bhopMinHits);
     WRITE("Noscope crosshair", noscopeCrosshair);
     WRITE("Recoil crosshair", recoilCrosshair);
     WRITE("Auto reload", autoReload);
@@ -858,6 +856,8 @@ static void to_json(json& j, const Config::Misc& o)
     WRITE("Grenade predict", nadePredict);
     WRITE("Max angle delta", maxAngleDelta);
     WRITE("Reportbot", reportbot);
+    WRITE("Draw aimbot FOV", drawAimbotFov);
+    WRITE("Draw aimbot Actual FOV", actualFov);
     WRITE("Opposite Hand Knife", oppositeHandKnife);
     WRITE("Preserve Killfeed", preserveKillfeed);
 }

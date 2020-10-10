@@ -15,7 +15,6 @@
     <ClCompile Include="EventListener.cpp" />
     <ClCompile Include="GameData.cpp" />
     <ClCompile Include="Hacks\Aimbot.cpp" />
-    <ClCompile Include="Hacks\AntiAim.cpp" />
     <ClCompile Include="Hacks\Backtrack.cpp" />
     <ClCompile Include="Hacks\Chams.cpp" />
     <ClCompile Include="Hacks\EnginePrediction.cpp" />
@@ -62,7 +61,6 @@
     <ClInclude Include="fnv.h" />
     <ClInclude Include="GameData.h" />
     <ClInclude Include="Hacks\Aimbot.h" />
-    <ClInclude Include="Hacks\AntiAim.h" />
     <ClInclude Include="Hacks\Backtrack.h" />
     <ClInclude Include="Hacks\Chams.h" />
     <ClInclude Include="Hacks\EnginePrediction.h" />

@@ -208,6 +208,7 @@ public:
         bool nadePredict{ false };
         bool quickReload{ false };
         bool oppositeHandKnife = false;
+        bool drawAimbotFov{ false };
         PreserveKillfeed preserveKillfeed;
         ColorToggleThickness noscopeCrosshair;
         ColorToggleThickness recoilCrosshair;
@@ -216,7 +217,11 @@ public:
         ColorToggle bombTimer{ 1.0f, 0.55f, 0.0f };
         int chokedPackets{ 0 };
         int chokedPacketsKey{ 0 };
+        int bhopHitchance{ 100 };
+        int bhopMinHits{ 0 };
+        int bhopMaxHits{ 0 };
         float maxAngleDelta{ 255.0f };
+        float actualFov{ 0.0f };
 
         struct Reportbot {
             bool enabled = false;

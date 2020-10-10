@@ -25,5 +25,6 @@ namespace Misc
     void oppositeHandKnife(FrameStage stage) noexcept;
     void runReportbot() noexcept;
     void resetReportbot() noexcept;
+    void drawAimbotFov() noexcept;
     void preserveKillfeed(bool roundStart = false) noexcept;
 }

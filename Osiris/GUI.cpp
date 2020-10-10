@@ -1200,6 +1200,9 @@ void GUI::renderMiscWindow(bool contentOnly) noexcept
 
     ImGui::Checkbox("Anti AFK kick", &config->misc.antiAfkKick);
     ImGui::Checkbox("Bunny hop", &config->misc.bunnyHop);
+    ImGui::SliderInt("Bhop hitchance", &config->misc.bhopHitchance, 0, 100, "%d%");
+    ImGui::SliderInt("Min hits", &config->misc.bhopMinHits, 0, 20, "%d%");
+    ImGui::SliderInt("Max hits", &config->misc.bhopMaxHits, 0, 20, "%d%");
     ImGuiCustom::colorPicker("Noscope crosshair", config->misc.noscopeCrosshair);
     ImGuiCustom::colorPicker("Recoil crosshair", config->misc.recoilCrosshair);
     ImGui::Checkbox("Auto reload", &config->misc.autoReload);
@@ -1232,6 +1235,7 @@ void GUI::renderMiscWindow(bool contentOnly) noexcept
     ImGui::Checkbox("Grenade Prediction", &config->misc.nadePredict);
     ImGui::SetNextItemWidth(120.0f);
     ImGui::SliderFloat("Max angle delta", &config->misc.maxAngleDelta, 0.0f, 255.0f, "%.2f");
+    ImGui::Checkbox("Draw aimbot FOV", &config->misc.drawAimbotFov);
     ImGui::Checkbox("Opposite Hand Knife", &config->misc.oppositeHandKnife);
     ImGui::Checkbox("Preserve Killfeed", &config->misc.preserveKillfeed.enabled);
     ImGui::SameLine();
